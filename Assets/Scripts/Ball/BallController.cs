@@ -60,11 +60,17 @@ public class BallController : MonoBehaviour
         DetenerEfecto();
 
         Vector2 normal = collision.GetContact(0).normal;
-        Vector2 velocidadReflejada = Vector2.Reflect(rb.velocity, normal);
+        Vector2 velocidadEntrante = rb.velocity;
+
+        // Si la pelota llega casi sin velocidad propia (p. ej. empujada por el jugador),
+        // Reflect(0, normal) da (0,0): usamos la normal del choque como dirección de salida.
+        Vector2 velocidadReflejada = velocidadEntrante.sqrMagnitude > 0.0001f
+            ? Vector2.Reflect(velocidadEntrante, normal)
+            : normal;
 
         if (mantenerVelocidadConstante)
         {
-            float velocidadPrevia = Mathf.Max(rb.velocity.magnitude, velocidadMinima);
+            float velocidadPrevia = Mathf.Max(velocidadEntrante.magnitude, velocidadMinima);
             velocidadReflejada = velocidadReflejada.normalized * velocidadPrevia;
         }
 
