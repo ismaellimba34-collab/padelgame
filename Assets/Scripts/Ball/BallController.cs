@@ -28,6 +28,10 @@ public class BallController : MonoBehaviour
     [SerializeField] private float velocidadMinima = 3f;
     public UnityEvent OnRebotePared;
 
+    [Header("Prueba en el editor")]
+    [SerializeField] private Vector2 direccionPrueba = Vector2.right;
+    [SerializeField] private float velocidadPrueba = 10f;
+
     [Header("Configuración de golpes")]
     [SerializeField]
     private ConfiguracionGolpe[] configuraciones = new ConfiguracionGolpe[]
@@ -99,6 +103,24 @@ public class BallController : MonoBehaviour
         {
             efectoActual = StartCoroutine(AplicarFrenado(config.frenado));
         }
+    }
+
+    [ContextMenu("Lanzar de prueba")]
+    private void LanzarDePrueba()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("BallController: entrá en Play para probar el lanzamiento.");
+            return;
+        }
+
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody2D>();
+        }
+
+        DetenerEfecto();
+        rb.velocity = direccionPrueba.normalized * velocidadPrueba;
     }
 
     private void DetenerEfecto()
