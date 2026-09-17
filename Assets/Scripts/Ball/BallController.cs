@@ -22,6 +22,10 @@ public class BallController : MonoBehaviour
         public float frenado;
     }
 
+    [Header("Gravedad (vista lateral)")]
+    [Tooltip("Multiplicador de gravedad de la pelota. 0 = sin gravedad (vista superior); >0 = cae y traza arcos (vista lateral)")]
+    [SerializeField] private float gravedad = 2.5f;
+
     [Header("Rebote contra paredes")]
     [Tooltip("Si está activo, la pelota conserva su velocidad al rebotar (ángulo de entrada = ángulo de salida)")]
     [SerializeField] private bool mantenerVelocidadConstante = true;
@@ -61,7 +65,7 @@ public class BallController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
+        rb.gravityScale = gravedad;
 
         configPorTipo = new Dictionary<TipoGolpe, ConfiguracionGolpe>();
         foreach (var config in configuraciones)
