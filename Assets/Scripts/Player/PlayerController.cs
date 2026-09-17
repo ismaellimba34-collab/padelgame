@@ -1,60 +1,79 @@
 using UnityEngine;
 
+// Vista lateral: el jugador se mueve en el eje horizontal y puede saltar.
+// El eje vertical queda a cargo de la gravedad real del Rigidbody2D, por eso el
+// movimiento usa rb.velocity en vez de MovePosition (MovePosition ignoraría/pelearía
+// con la aceleración que la gravedad y el salto le aplican a rb.velocity.y).
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movimiento")]
     [SerializeField] private float velocidad = 6f;
 
+    [Header("Salto")]
+    [SerializeField] private float fuerzaSalto = 8f;
+    [Tooltip("Punto (hijo del jugador) ubicado a la altura de los pies, usado para detectar el piso")]
+    [SerializeField] private Transform chequeoSuelo;
+    [SerializeField] private float radioChequeoSuelo = 0.15f;
+    [SerializeField] private LayerMask capaSuelo;
+
     [Header("Joystick virtual (mobile)")]
-    [Tooltip("Si se deja vacío, el jugador se mueve con teclado (WASD / flechas) para probar en el editor")]
+    [Tooltip("Si se deja vacío, el jugador se mueve con teclado (flechas/A-D) para probar en el editor")]
     [SerializeField] private VirtualJoystick joystick;
 
     [Header("Límites de cancha (opcional)")]
     [SerializeField] private bool limitarAlCampo = false;
-    [SerializeField] private Vector2 limiteMin;
-    [SerializeField] private Vector2 limiteMax;
+    [SerializeField] private float limiteMinX;
+    [SerializeField] private float limiteMaxX;
 
     private Rigidbody2D rb;
-    private Vector2 direccionMovimiento;
+    private float entradaHorizontal;
+    private bool enElSuelo;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;
         rb.freezeRotation = true;
     }
 
     private void Update()
     {
-        Vector2 entradaJoystick = joystick != null ? joystick.Direccion : Vector2.zero;
+        float horizontalJoystick = joystick != null ? joystick.Direccion.x : 0f;
 
-        if (entradaJoystick.sqrMagnitude > 0.01f)
+        entradaHorizontal = Mathf.Abs(horizontalJoystick) > 0.1f
+            ? horizontalJoystick
+            : Input.GetAxisRaw("Horizontal");
+
+        if (Input.GetButtonDown("Jump"))
         {
-            direccionMovimiento = entradaJoystick;
-        }
-        else
-        {
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
-            direccionMovimiento = new Vector2(horizontal, vertical);
-            if (direccionMovimiento.sqrMagnitude > 1f)
-            {
-                direccionMovimiento.Normalize();
-            }
+            Saltar();
         }
     }
 
     private void FixedUpdate()
     {
-        Vector2 nuevaPosicion = rb.position + direccionMovimiento * velocidad * Time.fixedDeltaTime;
+        enElSuelo = chequeoSuelo != null
+            && Physics2D.OverlapCircle(chequeoSuelo.position, radioChequeoSuelo, capaSuelo);
+
+        Vector2 velocidadActual = rb.velocity;
+        velocidadActual.x = entradaHorizontal * velocidad;
+        rb.velocity = velocidadActual;
 
         if (limitarAlCampo)
         {
-            nuevaPosicion.x = Mathf.Clamp(nuevaPosicion.x, limiteMin.x, limiteMax.x);
-            nuevaPosicion.y = Mathf.Clamp(nuevaPosicion.y, limiteMin.y, limiteMax.y);
+            float x = Mathf.Clamp(rb.position.x, limiteMinX, limiteMaxX);
+            rb.position = new Vector2(x, rb.position.y);
+        }
+    }
+
+    // Conectar también al OnClick de un botón de salto en la UI para mobile.
+    public void Saltar()
+    {
+        if (!enElSuelo)
+        {
+            return;
         }
 
-        rb.MovePosition(nuevaPosicion);
+        rb.velocity = new Vector2(rb.velocity.x, fuerzaSalto);
     }
 }
