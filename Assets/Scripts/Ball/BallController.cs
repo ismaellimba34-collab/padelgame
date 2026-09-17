@@ -64,7 +64,13 @@ public class BallController : MonoBehaviour
         DetenerEfecto();
 
         Vector2 normal = collision.GetContact(0).normal;
-        Vector2 velocidadEntrante = rb.velocity;
+
+        // Usamos relativeVelocity (velocidad de acercamiento previa a la resolución física)
+        // en lugar de rb.velocity: para cuando este callback se ejecuta, el motor ya aplicó
+        // fricción/bounciness del Physics Material 2D por defecto sobre rb.velocity, dejando
+        // sobre todo la componente tangencial. Reflejar eso hace que la pelota "resbale" por
+        // la pared en vez de rebotar limpio, sobre todo en golpes diagonales.
+        Vector2 velocidadEntrante = collision.relativeVelocity;
 
         // Si la pelota llega casi sin velocidad propia (p. ej. empujada por el jugador),
         // Reflect(0, normal) da (0,0): usamos la normal del choque como dirección de salida.
