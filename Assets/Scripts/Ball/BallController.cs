@@ -28,6 +28,10 @@ public class BallController : MonoBehaviour
     [SerializeField] private float velocidadMinima = 3f;
     public UnityEvent OnRebotePared;
 
+    [Header("Prueba en el editor")]
+    [SerializeField] private Vector2 direccionPrueba = Vector2.right;
+    [SerializeField] private float velocidadPrueba = 10f;
+
     [Header("Configuración de golpes")]
     [SerializeField]
     private ConfiguracionGolpe[] configuraciones = new ConfiguracionGolpe[]
@@ -60,11 +64,17 @@ public class BallController : MonoBehaviour
         DetenerEfecto();
 
         Vector2 normal = collision.GetContact(0).normal;
-        Vector2 velocidadReflejada = Vector2.Reflect(rb.velocity, normal);
+        Vector2 velocidadEntrante = rb.velocity;
+
+        // Si la pelota llega casi sin velocidad propia (p. ej. empujada por el jugador),
+        // Reflect(0, normal) da (0,0): usamos la normal del choque como dirección de salida.
+        Vector2 velocidadReflejada = velocidadEntrante.sqrMagnitude > 0.0001f
+            ? Vector2.Reflect(velocidadEntrante, normal)
+            : normal;
 
         if (mantenerVelocidadConstante)
         {
-            float velocidadPrevia = Mathf.Max(rb.velocity.magnitude, velocidadMinima);
+            float velocidadPrevia = Mathf.Max(velocidadEntrante.magnitude, velocidadMinima);
             velocidadReflejada = velocidadReflejada.normalized * velocidadPrevia;
         }
 
@@ -93,6 +103,24 @@ public class BallController : MonoBehaviour
         {
             efectoActual = StartCoroutine(AplicarFrenado(config.frenado));
         }
+    }
+
+    [ContextMenu("Lanzar de prueba")]
+    private void LanzarDePrueba()
+    {
+        if (!Application.isPlaying)
+        {
+            Debug.LogWarning("BallController: entrá en Play para probar el lanzamiento.");
+            return;
+        }
+
+        if (rb == null)
+        {
+            rb = GetComponent<Rigidbody2D>();
+        }
+
+        DetenerEfecto();
+        rb.velocity = direccionPrueba.normalized * velocidadPrueba;
     }
 
     private void DetenerEfecto()
